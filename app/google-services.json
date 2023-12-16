@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "393564079223",
+    "project_id": "docvault-65c74",
+    "storage_bucket": "docvault-65c74.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:393564079223:android:61931e6f5585c752bd3272",
+        "android_client_info": {
+          "package_name": "com.brandonhxrr.vault"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAj1hxywjzwbgUGcLIuix8hJMmnRmWm-8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
