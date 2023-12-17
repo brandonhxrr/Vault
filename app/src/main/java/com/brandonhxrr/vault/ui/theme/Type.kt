@@ -24,8 +24,8 @@ val Typography = Typography(
         fontSize = 24.sp
     ),
     titleLarge = TextStyle(
-        fontFamily = FontFamily(Font(R.font.inter_semibold)),
-        fontWeight = FontWeight.Normal,
-        fontSize = 32.sp
+        fontFamily = FontFamily(Font(R.font.product_sans_bold)),
+        fontWeight = FontWeight.Bold,
+        fontSize = 36.sp
     ),
 )

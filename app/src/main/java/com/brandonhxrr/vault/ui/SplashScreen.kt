@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.brandonhxrr.vault.R
 
@@ -31,11 +33,10 @@ fun Splash(){
                 .align(Alignment.CenterVertically)
         ) {
             Image(
-                painter = painterResource(R.drawable.logo),
+                painter = painterResource(R.drawable.splash_logo),
                 contentDescription = "",
-                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .align(Alignment.CenterHorizontally)
             )
             Spacer(modifier = Modifier.height(24.dp))
@@ -49,4 +50,10 @@ fun Splash(){
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SplashPreview(){
+    Splash()
 }
