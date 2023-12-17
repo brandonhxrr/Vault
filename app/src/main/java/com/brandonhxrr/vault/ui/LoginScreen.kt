@@ -1,5 +1,6 @@
 package com.brandonhxrr.vault.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.brandonhxrr.vault.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -51,6 +56,10 @@ fun Login(navController: NavController? = null) {
     var user by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var passwordHidden by rememberSaveable { mutableStateOf(true) }
+
+    val auth = FirebaseAuth.getInstance()
+    var errorText by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -98,7 +107,7 @@ fun Login(navController: NavController? = null) {
         OutlinedTextField(
             value = user,
             onValueChange = {user = it},
-            label = { Text(text = stringResource(id = R.string.user)) },
+            label = { Text(text = stringResource(id = R.string.email)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp, start = 32.dp, end = 32.dp),
@@ -140,6 +149,37 @@ fun Login(navController: NavController? = null) {
         Button(
             onClick = {
                 keyboardController?.hide()
+
+                auth.signInWithEmailAndPassword(user, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            navController?.navigate(Screens.HomeScreen.name){
+                                popUpTo(Screens.LoginScreen.name){
+                                    inclusive = true
+                                }
+                            }
+                        } else {
+                            // Si hay un error en la autenticación, maneja los posibles casos
+                            try {
+                                throw task.exception!!
+                            } catch (e: FirebaseAuthInvalidUserException) {
+                                // El usuario no existe
+                                errorText = "Usuario no encontrado"
+
+                            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                                // Credenciales inválidas (por ejemplo, contraseña incorrecta)
+                                errorText = "Credenciales inválidas"
+                            } catch (e: Exception) {
+                                // Otros errores
+                                errorText = "Error en la autenticación"
+                            }
+                            Toast.makeText(
+                                context,
+                                errorText,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,

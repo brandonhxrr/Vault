@@ -19,6 +19,7 @@ import com.brandonhxrr.vault.ui.Screens
 import com.brandonhxrr.vault.ui.SignUp
 import com.brandonhxrr.vault.ui.Splash
 import com.brandonhxrr.vault.ui.theme.VaultTheme
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
 
@@ -40,6 +41,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Start() {
     val navController = rememberNavController()
+    val user = FirebaseAuth.getInstance().currentUser
 
     NavHost(
         navController = navController,
@@ -54,9 +56,17 @@ fun Start() {
 
                 override fun onFinish() {
                     if (navController.currentBackStackEntry?.destination?.route == Screens.SplashScreen.name) {
-                        navController.navigate(Screens.LoginScreen.name) {
-                            popUpTo(Screens.SplashScreen.name) {
-                                inclusive = true
+                        if (user != null) {
+                            navController.navigate(Screens.HomeScreen.name) {
+                                popUpTo(Screens.SplashScreen.name) {
+                                    inclusive = true
+                                }
+                            }
+                        } else {
+                            navController.navigate(Screens.LoginScreen.name) {
+                                popUpTo(Screens.SplashScreen.name) {
+                                    inclusive = true
+                                }
                             }
                         }
                     }

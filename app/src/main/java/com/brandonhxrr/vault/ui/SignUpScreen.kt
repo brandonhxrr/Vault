@@ -1,7 +1,9 @@
 package com.brandonhxrr.vault.ui
 
+import android.content.Context
 import android.net.Uri
 import android.util.Patterns
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -45,6 +47,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -63,6 +66,11 @@ import androidx.navigation.NavController
 import com.brandonhxrr.vault.R
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.storage.FirebaseStorage
 
 @OptIn(
     ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class,
@@ -81,6 +89,13 @@ fun SignUp(navController: NavController? = null) {
     var selectedImageUri by remember { mutableStateOf<String?>(null) }
     var userName by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
+
+    val auth = FirebaseAuth.getInstance()
+    val storage = FirebaseStorage.getInstance()
+    val storageRef = storage.reference
+
+    var errorText by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
 
     val registerImageActivityLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -259,11 +274,60 @@ fun SignUp(navController: NavController? = null) {
 
         Button(
             onClick = {
-                if (validateInputs(user, password, repeatPassword)) {
-                    // Lógica de registro exitoso
+                if (validateInputs(user, password, repeatPassword, context)) {
                     keyboardController?.hide()
-                } else {
-                    // Mostrar errores
+
+                    auth.createUserWithEmailAndPassword(user, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // Subir la imagen a Firebase Storage
+                                val imageRef = storageRef.child("profile_images/${auth.currentUser?.uid}")
+                                val uploadTask = imageRef.putFile(Uri.parse(selectedImageUri))
+
+                                uploadTask.continueWithTask { task ->
+                                    if (!task.isSuccessful) {
+                                        task.exception?.let {
+                                            throw it
+                                        }
+                                    }
+                                    imageRef.downloadUrl
+                                }.addOnCompleteListener { downloadUrlTask ->
+                                    if (downloadUrlTask.isSuccessful) {
+                                        // Actualizar el perfil del usuario con la URL de la imagen
+                                        val profileUpdates = UserProfileChangeRequest.Builder()
+                                            .setDisplayName(userName)
+                                            .setPhotoUri(downloadUrlTask.result)
+                                            .build()
+
+                                        auth.currentUser?.updateProfile(profileUpdates)
+                                    } else {
+                                        // Manejar error al obtener la URL de la imagen
+                                    }
+                                }
+
+                                // Lógica de registro exitoso
+                                keyboardController?.hide()
+                            } else {
+                                // Mostrar errores de Firebase
+                                try {
+                                    throw task.exception!!
+                                } catch (e: FirebaseAuthUserCollisionException) {
+                                    // Email ya registrado
+                                    // Muestra el mensaje de error en el campo de texto o usa Toast
+                                    errorText = "Correo ya registrado"
+                                } catch (e: Exception) {
+                                    // Otros errores de Firebase
+                                    // Muestra el mensaje de error en el campo de texto o usa Toast
+                                    errorText = "Error en el registro"
+                                }
+
+                                Toast.makeText(
+                                    context,
+                                    errorText,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
                 }
             }, colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -343,13 +407,29 @@ private fun isValidEmail(email: String): Boolean {
 }
 
 
-// Función para validar los campos de entrada
-private fun validateInputs(user: String, password: String, repeatPassword: String): Boolean {
-    return user.isNotBlank() && isValidEmail(user) && password.isNotBlank() && evaluatePasswordSecurity(
-        password
-    ) != PasswordSecurity.NONE && password == repeatPassword
-}
+private fun validateInputs(user: String, password: String, repeatPassword: String, context: Context): Boolean {
+    var isValid = true
+    var errorMessage = ""
 
+    if (user.isBlank() || !isValidEmail(user)) {
+        errorMessage = "El correo no es válido"
+        isValid = false
+    } else if (password.isBlank()) {
+        errorMessage = "La contraseña no puede estar vacía"
+        isValid = false
+    } else if (password != repeatPassword) {
+        errorMessage = "Las contraseñas no coinciden"
+        isValid = false
+    } else if (evaluatePasswordSecurity(password) != PasswordSecurity.STRONG){
+        errorMessage = "La contraseña debe ser de al menos 8 caracteres, tener al menos una mayúscula, una minúscula, un número y un caracter especial"
+    }
+
+    if (!isValid) {
+        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+    }
+
+    return isValid
+}
 
 @Preview(showBackground = true)
 @Composable
