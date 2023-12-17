@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Vault</string>
-    <string name="user">Correo electrónico</string>
+    <string name="user">Nombre</string>
+    <string name="email">Correo electrónico</string>
     <string name="password">Contraseña</string>
     <string name="login">Iniciar sesión</string>
     <string name="sign_up">Regístrate</string>

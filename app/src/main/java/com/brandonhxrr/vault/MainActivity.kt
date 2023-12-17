@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -16,12 +18,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.brandonhxrr.vault.ui.Home
 import com.brandonhxrr.vault.ui.Login
+import com.brandonhxrr.vault.ui.Register
 import com.brandonhxrr.vault.ui.Screens
 import com.brandonhxrr.vault.ui.SignUp
 import com.brandonhxrr.vault.ui.Splash
 import com.brandonhxrr.vault.ui.theme.VaultTheme
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
