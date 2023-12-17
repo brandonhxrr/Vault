@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.brandonhxrr.vault.ui.Home
+import com.brandonhxrr.vault.ui.Login
 import com.brandonhxrr.vault.ui.Screens
 import com.brandonhxrr.vault.ui.Splash
 import com.brandonhxrr.vault.ui.theme.VaultTheme
@@ -51,7 +52,7 @@ fun Start() {
                 }
 
                 override fun onFinish() {
-                    navController.navigate(Screens.HomeScreen.name)
+                    navController.navigate(Screens.LoginScreen.name)
                 }
             }
 
@@ -60,6 +61,14 @@ fun Start() {
         }
         composable(Screens.HomeScreen.name){
             Home()
+        }
+
+        composable(Screens.LoginScreen.name){
+            Login()
+        }
+
+        composable(Screens.SignUpScreen.name){
+
         }
     }
 }
