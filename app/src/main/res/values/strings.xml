@@ -10,4 +10,7 @@
     <string name="repeat_password">Repite la contraseña</string>
     <string name="yes_account">¿Ya tienes cuenta?</string>
     <string name="login_action">Inicia sesión</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_users">Empleados</string>
+    <string name="menu_share">Compartir</string>
 </resources>

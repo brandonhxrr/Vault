@@ -1,5 +1,7 @@
 package com.brandonhxrr.vault.ui
 
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -19,12 +21,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +52,13 @@ fun Home(
 ) {
 
     val auth = FirebaseAuth.getInstance()
+    var generatedKeys by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+
+    generatedKeys = sharedPreferences.getBoolean("generated_keys", false)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -93,13 +110,37 @@ fun Home(
             )
         },
         content = {
+            var selectedItem by remember { mutableIntStateOf(0) }
+            val items = listOf(R.string.menu_home, R.string.menu_users, R.string.menu_share)
+            val icons = listOf(R.drawable.home, R.drawable.users, R.drawable.share)
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(it)
-            ) {
-
+            )  {
+                if (generatedKeys) {
+                    //SharedWithMe()
+                } else {
+                    NoKeys(modifier = Modifier.weight(0.9f))
+                }
+                NavigationBar(modifier = Modifier.weight(0.1f)) {
+                    items.forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            selected = selectedItem == index,
+                            onClick = { selectedItem = index },
+                            icon = {
+                                Icon(
+                                    painter = painterResource(id = icons[index]),
+                                    contentDescription = stringResource(id = item)
+                                )
+                            },
+                            label = { Text(stringResource(id = item)) })
+                    }
+                }
             }
         }
     )
 }
+
+
