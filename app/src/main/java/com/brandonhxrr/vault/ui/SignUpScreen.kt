@@ -267,6 +267,26 @@ fun SignUp(navController: NavController? = null) {
 
         if (password.isNotEmpty()) {
             PasswordSecurityIndicator(passwordSecurity)
+            Spacer(modifier = Modifier.height(8.dp))
+            val passwordStrengthMessage = when (passwordSecurity) {
+                PasswordSecurity.WEAK -> "La contraseña es débil"
+                PasswordSecurity.MODERATE -> "La contraseña es moderada"
+                PasswordSecurity.STRONG -> "La contraseña es fuerte"
+                else -> ""
+            }
+            if (passwordStrengthMessage.isNotEmpty()) {
+                Text(
+                    text = passwordStrengthMessage,
+                    color = when (passwordSecurity) {
+                        PasswordSecurity.WEAK -> Color.Red
+                        PasswordSecurity.MODERATE -> Color.Yellow
+                        PasswordSecurity.STRONG -> Color.Green
+                        else -> Color.Transparent
+                    },
+                    modifier = Modifier.padding(start = 32.dp),
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
+                )
+            }
         }
 
 
@@ -281,30 +301,43 @@ fun SignUp(navController: NavController? = null) {
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
                                 // Subir la imagen a Firebase Storage
-                                val imageRef = storageRef.child("profile_images/${auth.currentUser?.uid}")
-                                val uploadTask = imageRef.putFile(Uri.parse(selectedImageUri))
+                                if(selectedImageUri != null){
+                                    val imageRef = storageRef.child("profile_images/${auth.currentUser?.uid}")
+                                    val uploadTask = imageRef.putFile(Uri.parse(selectedImageUri))
 
-                                uploadTask.continueWithTask { task ->
-                                    if (!task.isSuccessful) {
-                                        task.exception?.let {
-                                            throw it
+                                    uploadTask.continueWithTask { task ->
+                                        if (!task.isSuccessful) {
+                                            task.exception?.let {
+                                                throw it
+                                            }
+                                        }
+                                        imageRef.downloadUrl
+                                    }.addOnCompleteListener { downloadUrlTask ->
+                                        if (downloadUrlTask.isSuccessful) {
+                                            // Actualizar el perfil del usuario con la URL de la imagen
+                                            val profileUpdates = UserProfileChangeRequest.Builder()
+                                                .setDisplayName(userName)
+                                                .setPhotoUri(downloadUrlTask.result)
+                                                .build()
+
+                                            auth.currentUser?.updateProfile(profileUpdates)
+
+                                            navController?.navigate(Screens.HomeScreen.name){
+                                                popUpTo(Screens.SignUpScreen.name){
+                                                    inclusive = true
+                                                }
+                                            }
+                                        } else {
+                                            // Manejar error al obtener la URL de la imagen
                                         }
                                     }
-                                    imageRef.downloadUrl
-                                }.addOnCompleteListener { downloadUrlTask ->
-                                    if (downloadUrlTask.isSuccessful) {
-                                        // Actualizar el perfil del usuario con la URL de la imagen
-                                        val profileUpdates = UserProfileChangeRequest.Builder()
-                                            .setDisplayName(userName)
-                                            .setPhotoUri(downloadUrlTask.result)
-                                            .build()
-
-                                        auth.currentUser?.updateProfile(profileUpdates)
-                                    } else {
-                                        // Manejar error al obtener la URL de la imagen
+                                }else{
+                                    navController?.navigate(Screens.HomeScreen.name){
+                                        popUpTo(Screens.SignUpScreen.name){
+                                            inclusive = true
+                                        }
                                     }
                                 }
-
                                 // Lógica de registro exitoso
                                 keyboardController?.hide()
                             } else {
@@ -355,7 +388,11 @@ fun SignUp(navController: NavController? = null) {
                 text = stringResource(id = R.string.login_action),
                 color = Color.Blue,
                 modifier = Modifier.clickable {
-                    navController?.navigateUp()
+                    navController?.navigate(Screens.LoginScreen.name){
+                        popUpTo(Screens.SignUpScreen.name){
+                            inclusive = true
+                        }
+                    }
                 },
                 fontFamily = FontFamily(Font(R.font.product_sans_regular))
             )

@@ -208,7 +208,11 @@ fun Login(navController: NavController? = null) {
                 text = stringResource(id = R.string.sign_up),
                 color = Color.Blue,
                 modifier = Modifier.clickable {
-                    navController?.navigate(Screens.SignUpScreen.name)
+                    navController?.navigate(Screens.SignUpScreen.name){
+                        popUpTo(Screens.LoginScreen.name){
+                            inclusive = true
+                        }
+                    }
                 },
                 fontFamily = FontFamily(Font(R.font.product_sans_regular))
             )
