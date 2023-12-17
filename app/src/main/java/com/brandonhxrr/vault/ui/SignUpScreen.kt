@@ -291,7 +291,7 @@ fun SignUp(navController: NavController? = null) {
                 text = stringResource(id = R.string.login_action),
                 color = Color.Blue,
                 modifier = Modifier.clickable {
-                    navController?.navigate(Screens.LoginScreen.name)
+                    navController?.navigateUp()
                 },
                 fontFamily = FontFamily(Font(R.font.product_sans_regular))
             )
