@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.brandonhxrr.vault"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -65,6 +65,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.28.0")
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
+    implementation("org.bouncycastle:bcpkix-jdk15on:1.68")
+    implementation("org.bouncycastle:bcprov-jdk15on:1.68")
     implementation("androidx.compose.material:material-icons-extended-android:1.5.4")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
     implementation("com.google.firebase:firebase-storage-ktx:20.3.0")

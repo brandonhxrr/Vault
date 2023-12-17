@@ -1,5 +1,9 @@
 package com.brandonhxrr.vault.ui
 
+import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,18 +18,30 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.brandonhxrr.vault.R
+import com.brandonhxrr.vault.data.generateKeys
 
 @Composable
 fun NoKeys(modifier: Modifier) {
+
+    val context = LocalContext.current
+    var messageText by rememberSaveable { mutableStateOf("") }
+    val sharedPreferences: SharedPreferences =
+        context.getSharedPreferences("vault_preferences", Context.MODE_PRIVATE)
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -55,7 +71,20 @@ fun NoKeys(modifier: Modifier) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { /* Acción al hacer clic en el botón */ },
+            onClick = {
+                try {
+                    generateKeys(context)
+                    messageText = "Se generaron y guardaron las llaves exitosamente"
+                    sharedPreferences.edit().putBoolean("generated_keys", true).apply()
+                } catch (e: Exception) {
+                    messageText = "Ocurrió un error al generar las llaves"
+                    print(e)
+                    Log.e("NoKeysScreen", e.toString())
+
+                }
+
+
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -63,6 +92,8 @@ fun NoKeys(modifier: Modifier) {
         ) {
             Text(text = "Generar llaves")
         }
+
+        Toast.makeText(context, messageText, Toast.LENGTH_SHORT).show()
     }
 }
 

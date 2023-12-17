@@ -26,6 +26,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -56,9 +57,15 @@ fun Home(
     val context = LocalContext.current
 
     val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences("my_preferences", Context.MODE_PRIVATE)
+        context.getSharedPreferences("vault_preferences", Context.MODE_PRIVATE)
 
-    generatedKeys = sharedPreferences.getBoolean("generated_keys", false)
+    LaunchedEffect(key1 = generatedKeys) {
+        sharedPreferences.registerOnSharedPreferenceChangeListener { _, key ->
+            if (key == "generated_keys") {
+                generatedKeys = sharedPreferences.getBoolean("generated_keys", false)
+            }
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
