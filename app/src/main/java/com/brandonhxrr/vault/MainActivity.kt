@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.brandonhxrr.vault.ui.Home
 import com.brandonhxrr.vault.ui.Login
 import com.brandonhxrr.vault.ui.Screens
+import com.brandonhxrr.vault.ui.SignUp
 import com.brandonhxrr.vault.ui.Splash
 import com.brandonhxrr.vault.ui.theme.VaultTheme
 
@@ -64,11 +65,11 @@ fun Start() {
         }
 
         composable(Screens.LoginScreen.name){
-            Login()
+            Login(navController = navController)
         }
 
         composable(Screens.SignUpScreen.name){
-
+            SignUp(navController = navController)
         }
     }
 }
