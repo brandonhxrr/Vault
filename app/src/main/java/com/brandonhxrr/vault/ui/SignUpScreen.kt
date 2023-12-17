@@ -237,12 +237,17 @@ enum class PasswordSecurity {
 
 // Función para evaluar la seguridad de la contraseña
 private fun evaluatePasswordSecurity(password: String): PasswordSecurity {
-    // Lógica para evaluar la seguridad de la contraseña
-    // Puedes personalizar esta lógica según tus criterios
+    val minLength = 8
+    val hasUppercase = password.any { it.isUpperCase() }
+    val hasLowercase = password.any { it.isLowerCase() }
+    val hasDigit = password.any { it.isDigit() }
+    val hasSpecialChar = password.any { !it.isLetterOrDigit() }
+
     return when {
-        password.length < 6 -> PasswordSecurity.WEAK
-        password.length < 10 -> PasswordSecurity.MODERATE
-        else -> PasswordSecurity.STRONG
+        password.length < minLength -> PasswordSecurity.NONE
+        !hasUppercase && !hasLowercase && !hasDigit && !hasSpecialChar -> PasswordSecurity.WEAK
+        (hasUppercase || hasLowercase) && hasDigit && hasSpecialChar -> PasswordSecurity.STRONG
+        else -> PasswordSecurity.MODERATE
     }
 }
 
@@ -263,13 +268,19 @@ private fun PasswordSecurityIndicator(passwordSecurity: PasswordSecurity) {
             .background(color)
     )
 }
+// Función para validar el formato de dirección de correo electrónico
+private fun isValidEmail(email: String): Boolean {
+    return Patterns.EMAIL_ADDRESS.matcher(email).matches()
+}
+
 
 // Función para validar los campos de entrada
 private fun validateInputs(user: String, password: String, repeatPassword: String): Boolean {
-    // Lógica para validar los campos de entrada (puedes personalizarla según tus requisitos)
-    return user.isNotBlank() && password.isNotBlank() && password == repeatPassword &&
-            Patterns.EMAIL_ADDRESS.matcher(user).matches()
+    return user.isNotBlank() && isValidEmail(user) &&
+            password.isNotBlank() && evaluatePasswordSecurity(password) != PasswordSecurity.NONE &&
+            password == repeatPassword
 }
+
 
 @Preview(showBackground = true)
 @Composable
