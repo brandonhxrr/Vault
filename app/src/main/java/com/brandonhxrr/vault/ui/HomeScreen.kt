@@ -123,11 +123,18 @@ fun Home(
                     .fillMaxSize()
                     .padding(it)
             )  {
-                if (generatedKeys) {
-                    SharedWithMe(modifier = Modifier.weight(0.9f))
-                } else {
-                    NoKeys(modifier = Modifier.weight(0.9f))
+                when (selectedItem) {
+                    0 -> {
+                        if (generatedKeys) {
+                            SharedWithMe(modifier = Modifier.weight(0.9f))
+                        } else {
+                            NoKeys(modifier = Modifier.weight(0.9f))
+                        }
+                    }
+                    1 -> NoKeys(modifier = Modifier.weight(0.9f))
+                    2 -> SharedWithMe(modifier = Modifier.weight(0.9f))
                 }
+
                 NavigationBar(modifier = Modifier.weight(0.1f)) {
                     items.forEachIndexed { index, item ->
                         NavigationBarItem(
