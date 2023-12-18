@@ -24,13 +24,13 @@ fun generateKeys(context: Context) {
     println("Llaves generadas y guardadas exitosamente.")
 }
 
-fun sharePublicKey(context: Context) {
+/*fun sharePublicKey(context: Context) {
     val publicKeyFile = File(context.filesDir, "public_key.pem")
 
     val publicKey = loadPublicKeyFromFile(publicKeyFile)
 
     println("La clave pública es: ${publicKey.toBase64String()}")
-}
+}*/
 
 fun generateECDSAKeyPair(): KeyPair {
     val keyGen = KeyPairGenerator.getInstance("EC")
@@ -48,14 +48,18 @@ fun savePublicKeyToFile(file: File, publicKey: ByteArray) {
 }
 
 fun loadPrivateKeyFromFile(file: File): PrivateKey {
+
     val keyBytes = file.readBytes()
     val keyFactory = KeyFactory.getInstance("EC")
     val privateKeySpec = PKCS8EncodedKeySpec(keyBytes)
     return keyFactory.generatePrivate(privateKeySpec)
 }
 
-fun loadPublicKeyFromFile(file: File): ByteArray {
-    return file.readBytes()
+fun loadPublicKeyFromFile(context: Context): String {
+    val publicKeyFile = File(context.filesDir, "public_key.pem")
+    val publicKeyBytes = publicKeyFile.readBytes()
+
+    return Base64.getEncoder().encodeToString(publicKeyBytes)
 }
 
 fun performECDHKeyExchange(privateKey: PrivateKey, otherPartyPublicKey: ByteArray): ByteArray {
@@ -80,7 +84,7 @@ fun generateAESKeyFromSharedSecret(sharedSecret: ByteArray): SecretKeySpec {
     return SecretKeySpec(secretKey.encoded, "AES")
 }
 
-fun performKeyExchange(context: Context) {
+/*fun performKeyExchange(context: Context) {
     //Agregar que ingrese la llave del otro usuario
     val privateKeyFile = File(context.filesDir, "private_key.pem")
     val publicKeyFile = File(context.filesDir, "public_key.pem")
@@ -95,7 +99,7 @@ fun performKeyExchange(context: Context) {
     saveAESKeyToFile(aesKeyFile, aesKey.encoded)
 
     println("Intercambio de llaves completado. Clave AES generada y guardada en '$aesKeyFile'.")
-}
+}*/
 
 fun saveAESKeyToFile(file: File, aesKey: ByteArray) {
     val base64AESKey = Base64.getEncoder().encodeToString(aesKey)

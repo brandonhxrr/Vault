@@ -33,6 +33,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.brandonhxrr.vault.R
 import com.brandonhxrr.vault.data.generateKeys
+import com.brandonhxrr.vault.data.loadPublicKeyFromFile
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 
 @Composable
 fun NoKeys(modifier: Modifier) {
@@ -73,17 +76,30 @@ fun NoKeys(modifier: Modifier) {
         Button(
             onClick = {
                 try {
+                    // Generar y obtener la clave pública
                     generateKeys(context)
-                    messageText = "Se generaron y guardaron las llaves exitosamente"
-                    sharedPreferences.edit().putBoolean("generated_keys", true).apply()
+
+                    val publicKey = loadPublicKeyFromFile(context)
+
+                    val auth = FirebaseAuth.getInstance()
+
+                    auth.currentUser?.let { currentUser ->
+                        val userId = currentUser.uid
+                        val userReference = FirebaseDatabase.getInstance().getReference("users_public_data").child(userId)
+                        userReference.child("public_key").setValue(publicKey)
+                            .addOnSuccessListener {
+                                messageText = "Se generaron y guardaron las llaves exitosamente"
+                                sharedPreferences.edit().putBoolean("generated_keys", true).apply()
+                            }
+                            .addOnFailureListener { exception ->
+                                messageText = "Ocurrió un error al subir la clave pública a Firebase: ${exception.message}"
+                                Log.e("NoKeysScreen", exception.toString())
+                            }
+                    }
                 } catch (e: Exception) {
                     messageText = "Ocurrió un error al generar las llaves"
-                    print(e)
                     Log.e("NoKeysScreen", e.toString())
-
                 }
-
-
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -92,6 +108,7 @@ fun NoKeys(modifier: Modifier) {
         ) {
             Text(text = "Generar llaves")
         }
+
 
         Toast.makeText(context, messageText, Toast.LENGTH_SHORT).show()
     }
