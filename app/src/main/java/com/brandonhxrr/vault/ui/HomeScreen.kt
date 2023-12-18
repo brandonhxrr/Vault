@@ -131,7 +131,7 @@ fun Home(
                             NoKeys(modifier = Modifier.weight(0.9f))
                         }
                     }
-                    1 -> NoKeys(modifier = Modifier.weight(0.9f))
+                    1 -> Employees(modifier = Modifier.weight(0.9f))
                     2 -> SharedWithMe(modifier = Modifier.weight(0.9f))
                 }
 
