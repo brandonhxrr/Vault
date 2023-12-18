@@ -67,9 +67,9 @@ import com.brandonhxrr.vault.R
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
 
 @OptIn(
@@ -289,7 +289,6 @@ fun SignUp(navController: NavController? = null) {
             }
         }
 
-
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
@@ -300,9 +299,10 @@ fun SignUp(navController: NavController? = null) {
                     auth.createUserWithEmailAndPassword(user, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                // Subir la imagen a Firebase Storage
-                                if(selectedImageUri != null){
-                                    val imageRef = storageRef.child("profile_images/${auth.currentUser?.uid}")
+                                val userId = auth.currentUser?.uid
+
+                                if (selectedImageUri != null) {
+                                    val imageRef = storageRef.child("profile_images/$userId")
                                     val uploadTask = imageRef.putFile(Uri.parse(selectedImageUri))
 
                                     uploadTask.continueWithTask { task ->
@@ -314,7 +314,6 @@ fun SignUp(navController: NavController? = null) {
                                         imageRef.downloadUrl
                                     }.addOnCompleteListener { downloadUrlTask ->
                                         if (downloadUrlTask.isSuccessful) {
-                                            // Actualizar el perfil del usuario con la URL de la imagen
                                             val profileUpdates = UserProfileChangeRequest.Builder()
                                                 .setDisplayName(userName)
                                                 .setPhotoUri(downloadUrlTask.result)
@@ -322,36 +321,62 @@ fun SignUp(navController: NavController? = null) {
 
                                             auth.currentUser?.updateProfile(profileUpdates)
 
-                                            navController?.navigate(Screens.HomeScreen.name){
-                                                popUpTo(Screens.SignUpScreen.name){
-                                                    inclusive = true
+                                            val userReference = FirebaseDatabase.getInstance()
+                                                .getReference("users_public_data")
+                                                .child(userId.orEmpty())
+
+                                            val userData = hashMapOf(
+                                                "name" to userName,
+                                                "email" to user,
+                                                "profileImageUrl" to downloadUrlTask.result.toString()
+                                            )
+
+                                            userReference.setValue(userData)
+                                                .addOnSuccessListener {
+                                                    navController?.navigate(Screens.HomeScreen.name) {
+                                                        popUpTo(Screens.SignUpScreen.name) {
+                                                            inclusive = true
+                                                        }
+                                                    }
                                                 }
-                                            }
+                                                .addOnFailureListener {
+                                                    // Manejar error al guardar datos en la base de datos
+                                                }
                                         } else {
                                             // Manejar error al obtener la URL de la imagen
                                         }
                                     }
-                                }else{
-                                    navController?.navigate(Screens.HomeScreen.name){
-                                        popUpTo(Screens.SignUpScreen.name){
-                                            inclusive = true
+                                } else {
+                                    val userReference = FirebaseDatabase.getInstance()
+                                        .getReference("users_public_data").child(userId.orEmpty())
+
+                                    val userData = hashMapOf(
+                                        "name" to userName,
+                                        "email" to user,
+                                        "profileImageUrl" to ""
+                                    )
+
+                                    userReference.setValue(userData)
+                                        .addOnSuccessListener {
+                                            navController?.navigate(Screens.HomeScreen.name) {
+                                                popUpTo(Screens.SignUpScreen.name) {
+                                                    inclusive = true
+                                                }
+                                            }
                                         }
-                                    }
+                                        .addOnFailureListener {
+
+                                        }
                                 }
-                                // Lógica de registro exitoso
-                                keyboardController?.hide()
                             } else {
-                                // Mostrar errores de Firebase
-                                try {
+                                errorText = try {
                                     throw task.exception!!
                                 } catch (e: FirebaseAuthUserCollisionException) {
                                     // Email ya registrado
-                                    // Muestra el mensaje de error en el campo de texto o usa Toast
-                                    errorText = "Correo ya registrado"
+                                    "Correo ya registrado"
                                 } catch (e: Exception) {
                                     // Otros errores de Firebase
-                                    // Muestra el mensaje de error en el campo de texto o usa Toast
-                                    errorText = "Error en el registro"
+                                    "Error en el registro"
                                 }
 
                                 Toast.makeText(
@@ -362,15 +387,19 @@ fun SignUp(navController: NavController? = null) {
                             }
                         }
                 }
-            }, colors = ButtonDefaults.buttonColors(
+            },
+            colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-            ), modifier = Modifier
+            ),
+            modifier = Modifier
                 .height(50.dp)
                 .align(alignment = Alignment.CenterHorizontally)
         ) {
             Text(text = stringResource(id = R.string.sign_up))
         }
+
+
 
         Spacer(modifier = Modifier.height(50.dp))
 
@@ -388,8 +417,8 @@ fun SignUp(navController: NavController? = null) {
                 text = stringResource(id = R.string.login_action),
                 color = Color.Blue,
                 modifier = Modifier.clickable {
-                    navController?.navigate(Screens.LoginScreen.name){
-                        popUpTo(Screens.SignUpScreen.name){
+                    navController?.navigate(Screens.LoginScreen.name) {
+                        popUpTo(Screens.SignUpScreen.name) {
                             inclusive = true
                         }
                     }
@@ -444,7 +473,12 @@ private fun isValidEmail(email: String): Boolean {
 }
 
 
-private fun validateInputs(user: String, password: String, repeatPassword: String, context: Context): Boolean {
+private fun validateInputs(
+    user: String,
+    password: String,
+    repeatPassword: String,
+    context: Context
+): Boolean {
     var isValid = true
     var errorMessage = ""
 
@@ -457,8 +491,9 @@ private fun validateInputs(user: String, password: String, repeatPassword: Strin
     } else if (password != repeatPassword) {
         errorMessage = "Las contraseñas no coinciden"
         isValid = false
-    } else if (evaluatePasswordSecurity(password) != PasswordSecurity.STRONG){
-        errorMessage = "La contraseña debe ser de al menos 8 caracteres, tener al menos una mayúscula, una minúscula, un número y un caracter especial"
+    } else if (evaluatePasswordSecurity(password) != PasswordSecurity.STRONG) {
+        errorMessage =
+            "La contraseña debe ser de al menos 8 caracteres, tener al menos una mayúscula, una minúscula, un número y un caracter especial"
     }
 
     if (!isValid) {

@@ -20,6 +20,7 @@ import com.brandonhxrr.vault.ui.SignUp
 import com.brandonhxrr.vault.ui.Splash
 import com.brandonhxrr.vault.ui.theme.VaultTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.Security
 
@@ -27,7 +28,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
         setContent {
             VaultTheme {
                 Surface(
