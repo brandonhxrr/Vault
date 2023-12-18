@@ -51,7 +51,7 @@ fun NoKeys(modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            painter = painterResource(id = R.drawable.not_found), // Reemplaza con tu recurso de imagen
+            painter = painterResource(id = R.drawable.not_found),
             contentDescription = "Image",
             contentScale = ContentScale.Crop,
             modifier = Modifier

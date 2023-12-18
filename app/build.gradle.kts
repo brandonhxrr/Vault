@@ -67,6 +67,7 @@ dependencies {
     implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
     implementation("org.bouncycastle:bcpkix-jdk15on:1.68")
     implementation("org.bouncycastle:bcprov-jdk15on:1.68")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.compose.material:material-icons-extended-android:1.5.4")
     implementation("com.google.firebase:firebase-auth-ktx:22.3.0")
     implementation("com.google.firebase:firebase-storage-ktx:20.3.0")

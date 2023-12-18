@@ -2,6 +2,7 @@ package com.brandonhxrr.vault.ui
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -59,12 +60,8 @@ fun Home(
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("vault_preferences", Context.MODE_PRIVATE)
 
-    LaunchedEffect(key1 = generatedKeys) {
-        sharedPreferences.registerOnSharedPreferenceChangeListener { _, key ->
-            if (key == "generated_keys") {
-                generatedKeys = sharedPreferences.getBoolean("generated_keys", false)
-            }
-        }
+    LaunchedEffect(Unit) {
+        generatedKeys = sharedPreferences.getBoolean("generated_keys", false)
     }
 
     Scaffold(
@@ -127,7 +124,7 @@ fun Home(
                     .padding(it)
             )  {
                 if (generatedKeys) {
-                    //SharedWithMe()
+                    SharedWithMe(modifier = Modifier.weight(0.9f))
                 } else {
                     NoKeys(modifier = Modifier.weight(0.9f))
                 }
