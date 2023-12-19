@@ -55,7 +55,10 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import java.io.File
+import java.text.SimpleDateFormat
 import java.util.Base64
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.crypto.spec.SecretKeySpec
 
@@ -204,6 +207,10 @@ fun Share(modifier: Modifier) {
 
                                     val uploadTask = fileRef.putFile(Uri.fromFile(encryptedFile))
 
+                                    val dateFormat =
+                                        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                    val currentDate = dateFormat.format(Date())
+
                                     uploadTask.continueWithTask { task ->
                                         if (!task.isSuccessful) {
                                             task.exception?.let {
@@ -222,8 +229,14 @@ fun Share(modifier: Modifier) {
                                                 .child(currentUser.uid).child("shared")
                                                 .child(userId!!).child("files").child(fileId)
 
-                                            fileReference.child("path")
-                                                .setValue(downloadUri.toString())
+                                            val fileData = hashMapOf(
+                                                "path" to downloadUri.toString(),
+                                                "name" to selectedFile?.name,
+                                                "type" to selectedFile?.extension,
+                                                "date" to currentDate.toString()
+                                            )
+
+                                            fileReference.setValue(fileData)
                                                 .addOnSuccessListener {
                                                     Toast.makeText(
                                                         context,
@@ -231,12 +244,12 @@ fun Share(modifier: Modifier) {
                                                         Toast.LENGTH_SHORT
                                                     ).show()
                                                 }.addOnFailureListener {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Error al agregar la ruta del archivo en la base de datos",
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Error al agregar la ruta del archivo en la base de datos",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
                                         } else {
                                             Toast.makeText(
                                                 context,
