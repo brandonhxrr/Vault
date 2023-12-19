@@ -132,7 +132,7 @@ fun Home(
                         }
                     }
                     1 -> Employees(modifier = Modifier.weight(0.9f))
-                    2 -> SharedWithMe(modifier = Modifier.weight(0.9f))
+                    2 -> Share(modifier = Modifier.weight(0.9f))
                 }
 
                 NavigationBar(modifier = Modifier.weight(0.1f)) {
