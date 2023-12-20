@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -86,8 +87,17 @@ fun Share(modifier: Modifier) {
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(32.dp)
     ) {
+
+        Text(
+            text = "Compartir archivo",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        )
 
         Box(
             modifier = Modifier
@@ -107,6 +117,32 @@ fun Share(modifier: Modifier) {
                     contentDescription = "Toggle Dropdown"
                 )
             }
+
+            DropdownMenu(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(
+                        color = Color.White,
+                        shape = RoundedCornerShape(8.dp)
+                    ),
+                expanded = isMenuExpanded,
+                onDismissRequest = {
+                    isMenuExpanded = false
+                }
+            ) {
+                users.forEach { user ->
+                    DropdownMenuItem(
+                        onClick = {
+                            selectedUser = user
+                            isMenuExpanded = false
+                        },
+                        text = {
+                            Text(text = user.email)
+                        }
+                    )
+                }
+            }
         }
 
         DisposableEffect(Unit) {
@@ -116,31 +152,7 @@ fun Share(modifier: Modifier) {
             }
         }
 
-        DropdownMenu(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .background(
-                    color = Color.White,
-                    shape = RoundedCornerShape(8.dp)
-                ),
-            expanded = isMenuExpanded,
-            onDismissRequest = {
-                isMenuExpanded = false
-            }
-        ) {
-            users.forEach { user ->
-                DropdownMenuItem(
-                    onClick = {
-                        selectedUser = user
-                        isMenuExpanded = false
-                    },
-                    text = {
-                        Text(text = user.email)
-                    }
-                )
-            }
-        }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 

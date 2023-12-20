@@ -20,17 +20,7 @@ fun generateKeys(context: Context) {
 
     savePrivateKeyToFile(privateKeyFile, keyPair.private.encoded)
     savePublicKeyToFile(publicKeyFile, keyPair.public.encoded)
-
-    println("Llaves generadas y guardadas exitosamente.")
 }
-
-/*fun sharePublicKey(context: Context) {
-    val publicKeyFile = File(context.filesDir, "public_key.pem")
-
-    val publicKey = loadPublicKeyFromFile(publicKeyFile)
-
-    println("La clave pública es: ${publicKey.toBase64String()}")
-}*/
 
 fun generateECDSAKeyPair(): KeyPair {
     val keyGen = KeyPairGenerator.getInstance("EC")
@@ -64,7 +54,6 @@ fun loadPublicKeyFromFile(context: Context): String {
 
 fun performECDHKeyExchange(privateKey: PrivateKey, otherPartyPublicKey: ByteArray): ByteArray {
     val kf = KeyFactory.getInstance("EC")
-    val curveParams = ECNamedCurveTable.getParameterSpec("secp256r1")
     val keySpec = X509EncodedKeySpec(otherPartyPublicKey)
     val publicKey = kf.generatePublic(keySpec)
 
@@ -73,39 +62,3 @@ fun performECDHKeyExchange(privateKey: PrivateKey, otherPartyPublicKey: ByteArra
     keyAgreement.doPhase(publicKey, true)
     return keyAgreement.generateSecret()
 }
-
-fun generateAESKeyFromSharedSecret(sharedSecret: ByteArray): SecretKeySpec {
-    val salt = "salt_123".toByteArray()
-    val iterations = 100000
-    val keyLength = 256 // Longitud de la clave AES (AES-256)
-    val keySpec = PBEKeySpec(String(sharedSecret).toCharArray(), salt, iterations, keyLength)
-    val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-    val secretKey = factory.generateSecret(keySpec)
-    return SecretKeySpec(secretKey.encoded, "AES")
-}
-
-/*fun performKeyExchange(context: Context) {
-    //Agregar que ingrese la llave del otro usuario
-    val privateKeyFile = File(context.filesDir, "private_key.pem")
-    val publicKeyFile = File(context.filesDir, "public_key.pem")
-    val aesKeyFile = File(context.filesDir, "aes_key.txt")
-
-    val loadedPrivateKey = loadPrivateKeyFromFile(privateKeyFile)
-    val otherPartyPublicKey = loadPublicKeyFromFile(publicKeyFile)
-
-    val sharedSecret = performECDHKeyExchange(loadedPrivateKey, otherPartyPublicKey)
-    val aesKey = generateAESKeyFromSharedSecret(sharedSecret)
-
-    saveAESKeyToFile(aesKeyFile, aesKey.encoded)
-
-    println("Intercambio de llaves completado. Clave AES generada y guardada en '$aesKeyFile'.")
-}*/
-
-fun saveAESKeyToFile(file: File, aesKey: ByteArray) {
-    val base64AESKey = Base64.getEncoder().encodeToString(aesKey)
-    file.writeText(base64AESKey)
-}
-
-fun ByteArray.toBase64String(): String = Base64.getEncoder().encodeToString(this)
-
-fun String.base64ToByteArray(): ByteArray = Base64.getDecoder().decode(this)
