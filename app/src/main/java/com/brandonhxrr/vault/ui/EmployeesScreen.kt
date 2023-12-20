@@ -153,9 +153,7 @@ fun Employee(user: User) {
                     confirmButton = {
                         Button(
                             onClick = {
-                                // Generar clave compartida
-                                val privateKeyFile = File(context.filesDir, "private_key.pem")
-                                val privateKey = loadPrivateKeyFromFile(privateKeyFile)
+                                val privateKey = loadPrivateKeyFromFile(context)
                                 val decodedPublicKey = Base64.getDecoder().decode(publicKey)
                                 val sharedKey = performECDHKeyExchange(privateKey, decodedPublicKey)
 

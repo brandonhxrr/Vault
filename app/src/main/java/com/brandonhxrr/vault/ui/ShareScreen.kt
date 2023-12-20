@@ -47,6 +47,8 @@ import androidx.documentfile.provider.DocumentFile
 import com.brandonhxrr.vault.data.EmployeesViewModel
 import com.brandonhxrr.vault.data.User
 import com.brandonhxrr.vault.data.encryptFileAesGcm
+import com.brandonhxrr.vault.data.loadPrivateKeyFromFile
+import com.brandonhxrr.vault.data.signECDSA
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -147,12 +149,9 @@ fun Share(modifier: Modifier) {
 
         DisposableEffect(Unit) {
             onDispose {
-                // Cerrar el menú cuando el componente se dispose
                 isMenuExpanded = false
             }
         }
-
-
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -178,9 +177,11 @@ fun Share(modifier: Modifier) {
         Button(
             onClick = {
                 if (selectedUser != null && selectedFile != null) {
-                    // Obtener la shared_key de Firebase
                     val userId = selectedUser?.id
                     val currentUser = FirebaseAuth.getInstance().currentUser
+
+                    val privateKeyFile = loadPrivateKeyFromFile(context)
+
                     if (currentUser != null) {
                         val databaseReference: DatabaseReference =
                             FirebaseDatabase.getInstance()
@@ -207,6 +208,8 @@ fun Share(modifier: Modifier) {
 
                                     val encryptedFile =
                                         encryptFileAesGcm(context, aesKey, tempFile)
+
+                                    val signature = signECDSA(privateKeyFile, inputStream!!.readBytes())
 
                                     val storage = FirebaseStorage.getInstance()
 
@@ -245,7 +248,8 @@ fun Share(modifier: Modifier) {
                                                 "path" to downloadUri.toString(),
                                                 "name" to selectedFile?.name,
                                                 "type" to selectedFile?.extension,
-                                                "date" to currentDate.toString()
+                                                "date" to currentDate.toString(),
+                                                "signature" to signature
                                             )
 
                                             fileReference.setValue(fileData)

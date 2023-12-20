@@ -5,15 +5,15 @@ import java.nio.file.Paths
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
+import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-fun signECDSA(privateKey: PrivateKey, filePath: String): ByteArray {
-    val data = Files.readAllBytes(Paths.get(filePath))
+fun signECDSA(privateKey: PrivateKey, data: ByteArray): String {
     val signature = Signature.getInstance("SHA256withECDSA")
     signature.initSign(privateKey)
     signature.update(data)
-    return signature.sign()
+    return Base64.getEncoder().encodeToString(signature.sign())
 }
 
 fun verifyECDSA(publicKey: PublicKey, filePath: String, signature: ByteArray): Boolean {

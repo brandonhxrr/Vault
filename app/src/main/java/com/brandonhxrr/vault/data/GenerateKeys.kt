@@ -1,6 +1,7 @@
 package com.brandonhxrr.vault.data
 
 import android.content.Context
+import android.util.Log
 import org.bouncycastle.jce.ECNamedCurveTable
 import java.io.File
 import java.security.*
@@ -37,11 +38,15 @@ fun savePublicKeyToFile(file: File, publicKey: ByteArray) {
     file.writeBytes(publicKey)
 }
 
-fun loadPrivateKeyFromFile(file: File): PrivateKey {
-
-    val keyBytes = file.readBytes()
+fun loadPrivateKeyFromFile(context: Context): PrivateKey {
+    val privateKeyFile = File(context.filesDir, "private_key.pem")
+    val keyBytes = privateKeyFile.readBytes()
     val keyFactory = KeyFactory.getInstance("EC")
     val privateKeySpec = PKCS8EncodedKeySpec(keyBytes)
+
+    val encodedPrivateKey = Base64.getEncoder().encodeToString(keyBytes)
+    val encodedKeyF = Base64.getEncoder().encodeToString(privateKeySpec.encoded)
+
     return keyFactory.generatePrivate(privateKeySpec)
 }
 
