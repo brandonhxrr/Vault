@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.brandonhxrr.vault.R
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
@@ -50,7 +51,7 @@ import com.google.firebase.auth.FirebaseAuth
     ExperimentalGlideComposeApi::class
 )
 @Composable
-fun Home(
+fun Home(navController: NavController
 ) {
 
     val auth = FirebaseAuth.getInstance()
@@ -93,7 +94,9 @@ fun Home(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* doSomething() */ }) {
+                    IconButton(onClick = {
+                        navController.navigate(Screens.UserScreen.name)
+                    }) {
                         if (auth.currentUser?.photoUrl != null) {
                             GlideImage(
                                 model = auth.currentUser?.photoUrl,
