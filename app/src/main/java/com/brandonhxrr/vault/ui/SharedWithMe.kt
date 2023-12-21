@@ -42,6 +42,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -164,6 +165,7 @@ fun SharedFile(sharedFile: SharedFile) {
     val alertVisible = remember { mutableStateOf(false) }
     val alertMessage = remember { mutableStateOf("") }
     var alertIcon = remember { mutableStateOf("") }
+    var painterResource = remember { mutableStateOf(0) }
 
     Card(
         modifier = Modifier
@@ -178,12 +180,45 @@ fun SharedFile(sharedFile: SharedFile) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            when(sharedFile.type){
+                "pdf" -> {
+                    painterResource.value = R.drawable.pdf
+                }
+                "doc", "docx" -> {
+                    painterResource.value = R.drawable.doc
+                }
+                "xls", "xlsx" -> {
+                    painterResource.value = R.drawable.xls
+                }
+                "ppt", "pptx" -> {
+                    painterResource.value = R.drawable.ppt
+                }
+                "jpg", "jpeg", "png" -> {
+                    painterResource.value = R.drawable.image
+                }
+                "mp3", "wav" -> {
+                    painterResource.value = R.drawable.audio
+                }
+                "mp4", "avi", "mov" -> {
+                    painterResource.value = R.drawable.video
+                }
+                "zip", "rar" -> {
+                    painterResource.value = R.drawable.zip
+                }
+                "js", "html", "css", "php", "java", "kt", "py", "c", "cpp", "h", "cs", "go", "rb", "json", "xml" -> {
+                    painterResource.value = R.drawable.code
+                }
+                else -> {
+                    painterResource.value = R.drawable.txt
+                }
+            }
             Icon(
-                painter = painterResource(id = R.drawable.file),
+                painter = painterResource(painterResource.value),
                 contentDescription = null,
                 modifier = Modifier
                     .weight(0.2f)
-                    .size(40.dp)
+                    .size(40.dp),
+                tint = Color.Unspecified
             )
 
             Column(
@@ -195,7 +230,9 @@ fun SharedFile(sharedFile: SharedFile) {
                     text = sharedFile.name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular)),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
