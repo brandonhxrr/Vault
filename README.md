@@ -4,6 +4,10 @@
 
 Vault es una aplicación construida en Jetpack Compose que te ayuda a compartir archivos de manera segura entre 2 entidades usando algoritmos criptográficos
 
+<div>
+  <img src="./images/screen.png" alt = "screen"/>
+</div>
+
 ### Algoritmos criptográficos
 - Cifrado por bloques AES 256 en modo GCM para el cifrado de archivos, se elige este algoritmo porque el modo GCM impide modificar la información por medio de ataques de cambios de bits, lo cual brinda confidencialidad e integridad.
 - HMAC con SHA-256 para garantizar la integridad de la información, se elige este algoritmo porque es menos afectado por los ataques de colisión y no tiene las mismas debilidades que solo usar SHA-256.
