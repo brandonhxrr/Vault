@@ -14,11 +14,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircleOutline
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +44,8 @@ import com.brandonhxrr.vault.data.SharedFile
 import com.brandonhxrr.vault.data.decryptFileAesGcm
 import com.brandonhxrr.vault.data.loadPrivateKeyFromFile
 import com.brandonhxrr.vault.data.performECDHKeyExchange
+import com.brandonhxrr.vault.data.signECDSA
+import com.brandonhxrr.vault.data.verifyECDSA
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -63,7 +71,7 @@ private fun getSharedFilesFromDatabase(onSuccess: (List<SharedFile>) -> Unit) {
 
     val sharedFiles = mutableListOf<SharedFile>()
 
-    filesReference.addListenerForSingleValueEvent(object : ValueEventListener {
+    filesReference.addValueEventListener(object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
             for (userSnapshot in snapshot.children) {
                 val filesNode = userSnapshot.child("files")
@@ -71,25 +79,29 @@ private fun getSharedFilesFromDatabase(onSuccess: (List<SharedFile>) -> Unit) {
                     val id = fileSnapshot.key ?: ""
                     val name = fileSnapshot.child("name").getValue(String::class.java) ?: ""
                     val date = fileSnapshot.child("date").getValue(String::class.java) ?: ""
-                    val author_public_key =
+                    val authorId =
                         fileSnapshot.child("author").getValue(String::class.java) ?: ""
                     val fileURL =
                         fileSnapshot.child("path").getValue(String::class.java) ?: ""
                     val type = fileSnapshot.child("type").getValue(String::class.java) ?: ""
                     val signature =
                         fileSnapshot.child("signature").getValue(String::class.java) ?: ""
-                    var fileAuthor = fileSnapshot.child("fileAuthor").getValue(String::class.java)
+                    var author = fileSnapshot.child("fileAuthor").getValue(String::class.java)
                         ?: ""
+                    var authorPublicKey =
+                        fileSnapshot.child("authorPublicKey").getValue(String::class.java)
+                            ?: ""
 
                     val sharedFile = SharedFile(
-                        id,
-                        name,
-                        date,
-                        author_public_key,
-                        fileURL,
-                        type,
-                        signature,
-                        fileAuthor
+                        id = id,
+                        name = name,
+                        date = date,
+                        authorId = authorId,
+                        fileURL = fileURL,
+                        type = type,
+                        signature = signature,
+                        author = author,
+                        authorPublicKey = authorPublicKey
                     )
 
                     sharedFiles.add(sharedFile)
@@ -107,6 +119,7 @@ private fun getSharedFilesFromDatabase(onSuccess: (List<SharedFile>) -> Unit) {
 @Composable
 fun SharedWithMe(modifier: Modifier) {
     var sharedFiles by remember { mutableStateOf<List<SharedFile>>(emptyList()) }
+    val lazyListState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
         getSharedFilesFromDatabase {
@@ -129,7 +142,9 @@ fun SharedWithMe(modifier: Modifier) {
                 .padding(16.dp)
         )
 
-        LazyColumn {
+        LazyColumn(
+            state = lazyListState
+        ) {
             items(sharedFiles) { file ->
                 SharedFile(file)
             }
@@ -140,6 +155,9 @@ fun SharedWithMe(modifier: Modifier) {
 @Composable
 fun SharedFile(sharedFile: SharedFile) {
     val context = LocalContext.current
+    val alertVisible = remember { mutableStateOf(false) }
+    val alertMessage = remember { mutableStateOf("") }
+    var alertIcon = remember { mutableStateOf("") }
 
     Card(
         modifier = Modifier
@@ -173,23 +191,104 @@ fun SharedFile(sharedFile: SharedFile) {
                     fontWeight = FontWeight.Bold
                 )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = sharedFile.date,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
+                Text(
+                    text = sharedFile.author,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
 
-                    Text(
-                        text = sharedFile.author,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
-                    )
-                }
+                Text(
+                    text = sharedFile.date,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+
             }
+
+            Icon(
+                imageVector = Icons.Rounded.CheckCircleOutline,
+                contentDescription = null,
+                modifier = Modifier
+                    .weight(0.2f)
+                    .size(32.dp)
+                    .clickable {
+                        try {
+                            val privateKey = loadPrivateKeyFromFile(context)
+                            val decodedPrivateKey = Base64
+                                .getDecoder()
+                                .decode(privateKey)
+
+
+                            Thread {
+                                try {
+                                    val inputFile = File(
+                                        context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                                        sharedFile.name
+                                    )
+
+                                    if(inputFile.exists()) {
+                                        try {
+                                            val signature =
+                                                signECDSA(decodedPrivateKey, inputFile.readBytes())
+                                            val decodedSignature = Base64
+                                                .getDecoder()
+                                                .decode(signature)
+
+                                            val verification = verifyECDSA(
+                                                Base64
+                                                    .getDecoder()
+                                                    .decode(sharedFile.authorPublicKey),
+                                                inputFile.readBytes(),
+                                                decodedSignature
+                                            )
+
+                                            GlobalScope.launch(Dispatchers.Main) {
+                                                if (verification) {
+                                                    alertMessage.value = "El archivo es auténtico"
+                                                    alertIcon.value = "success"
+                                                    alertVisible.value = true
+                                                } else {
+                                                    alertMessage.value = "El archivo no es auténtico"
+                                                    alertIcon.value = "error"
+                                                    alertVisible.value = true
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            GlobalScope.launch(Dispatchers.Main) {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        "Error al verificar el archivo",
+                                                        Toast.LENGTH_LONG
+                                                    )
+                                                    .show()
+                                                Log.e("SharedWithMe", e.stackTraceToString())
+                                            }
+                                        }
+                                    }else{
+                                        GlobalScope.launch(Dispatchers.Main) {
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "Primero descarga el archivo",
+                                                    Toast.LENGTH_LONG
+                                                )
+                                                .show()
+                                        }
+                                    }
+
+                                } catch (e: Exception) {
+                                    GlobalScope.launch(Dispatchers.Main) {
+                                        Log.e("SharedWithMe1", e.stackTraceToString())
+                                    }
+                                }
+                            }.start()
+                        } catch (e: Exception) {
+                            Log.e("SharedWithMe3", e.stackTraceToString())
+                        }
+
+                    }
+            )
 
             Icon(
                 painter = painterResource(id = R.drawable.download),
@@ -198,82 +297,114 @@ fun SharedFile(sharedFile: SharedFile) {
                     .weight(0.2f)
                     .size(32.dp)
                     .clickable {
-
-                        val decodedPublicKey = Base64
-                            .getDecoder()
-                            .decode(sharedFile.author_public_key)
-                        val privateKey = loadPrivateKeyFromFile(context)
-                        val decodedPrivateKey = Base64
-                            .getDecoder()
-                            .decode(privateKey)
-                        val sharedKey = performECDHKeyExchange(decodedPrivateKey, decodedPublicKey)
-
                         try {
-                            Log.d("SharedWithMe", sharedFile.fileURL)
-                            val url = URL(sharedFile.fileURL)
 
-                            Thread {
-                                try {
-                                    val connection = url.openConnection()
-                                    connection.connect()
+                            val decodedPublicKey = Base64
+                                .getDecoder()
+                                .decode(sharedFile.authorPublicKey)
 
+                            val privateKey = loadPrivateKeyFromFile(context)
+                            val decodedPrivateKey = Base64
+                                .getDecoder()
+                                .decode(privateKey)
+                            val sharedKey =
+                                performECDHKeyExchange(decodedPrivateKey, decodedPublicKey)
 
-                                    val input = BufferedInputStream(url.openStream())
+                            try {
+                                Log.d("SharedWithMe", sharedFile.fileURL)
+                                val url = URL(sharedFile.fileURL)
 
+                                Thread {
                                     try {
-                                        val decryptedData = decryptFileAesGcm(
-                                            sharedKey,
-                                            input.readBytes()
-                                        )
+                                        val connection = url.openConnection()
+                                        connection.connect()
 
-                                        val destinationFile = File(
-                                            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                                            sharedFile.name
-                                        )
+                                        val input = BufferedInputStream(url.openStream())
 
-                                        val outputStream = FileOutputStream(destinationFile)
-                                        outputStream.write(decryptedData)
-                                        outputStream.close()
+                                        try {
+                                            val decryptedData = decryptFileAesGcm(
+                                                sharedKey,
+                                                input.readBytes()
+                                            )
 
-                                        // Actualizar la interfaz de usuario desde el hilo principal
-                                        GlobalScope.launch(Dispatchers.Main) {
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    "Archivo descargado y guardado con éxito en: ${destinationFile.absolutePath}",
-                                                    Toast.LENGTH_LONG
-                                                )
-                                                .show()
+                                            val destinationFile = File(
+                                                context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                                                sharedFile.name
+                                            )
+
+                                            val outputStream = FileOutputStream(destinationFile)
+                                            outputStream.write(decryptedData)
+                                            outputStream.close()
+
+                                            GlobalScope.launch(Dispatchers.Main) {
+                                                alertMessage.value =
+                                                    "Archivo descargado y guardado con éxito en: ${destinationFile.absolutePath}"
+                                                alertIcon.value = "success"
+                                                alertVisible.value = true
+                                            }
+                                        } catch (e: Exception) {
+                                            GlobalScope.launch(Dispatchers.Main) {
+                                                Toast
+                                                    .makeText(
+                                                        context,
+                                                        "Error al descargar o guardar el archivo",
+                                                        Toast.LENGTH_LONG
+                                                    )
+                                                    .show()
+                                                Log.e("SharedWithMe", e.stackTraceToString())
+                                            }
+                                        } finally {
+                                            input.close()
                                         }
                                     } catch (e: Exception) {
-                                        // Manejar errores y mostrar el Toast en el hilo principal
                                         GlobalScope.launch(Dispatchers.Main) {
-                                            Toast
-                                                .makeText(
-                                                    context,
-                                                    "Error al descargar o guardar el archivo",
-                                                    Toast.LENGTH_LONG
-                                                )
-                                                .show()
-                                            Log.e("SharedWithMe", e.stackTraceToString())
+                                            Log.e("SharedWithMe1", e.stackTraceToString())
                                         }
-                                    } finally {
-                                        input.close()
                                     }
-                                } catch (e: Exception) {
-                                    // Manejar errores y mostrar el Toast en el hilo principal
-                                    GlobalScope.launch(Dispatchers.Main) {
-                                        Log.e("SharedWithMe1", e.stackTraceToString())
-                                    }
-                                }
-                            }.start()
+                                }.start()
+                            } catch (e: Exception) {
+                                Log.e("SharedWithMe2", e.stackTraceToString())
+                            }
                         } catch (e: Exception) {
-                            Log.e("SharedWithMe2", e.stackTraceToString())
+                            Log.e("SharedWithMe4", e.stackTraceToString())
                         }
-
-
                     }
             )
+
+            if (alertVisible.value) {
+                AlertDialog(
+                    onDismissRequest = {
+                        alertVisible.value = false
+                    },
+                    text = {
+                        Text(text = alertMessage.value)
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                alertVisible.value = false
+                            }
+                        ) {
+                            Text(text = "Aceptar")
+                        }
+                    },
+                    icon = {
+                        if (alertIcon.value == "error") {
+                            Icon(
+                                imageVector = Icons.Rounded.ErrorOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Rounded.CheckCircleOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp)
+                            )
+                        }
+                    }
+                )
+            }
 
         }
     }

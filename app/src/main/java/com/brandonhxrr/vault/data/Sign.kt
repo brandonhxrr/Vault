@@ -22,8 +22,13 @@ fun signECDSA(privateKeyBytes: ByteArray, data: ByteArray): String {
     return Base64.getEncoder().encodeToString(signature.sign())
 }
 
-fun verifyECDSA(publicKey: PublicKey, filePath: String, signature: ByteArray): Boolean {
-    val data = Files.readAllBytes(Paths.get(filePath))
+fun verifyECDSA(publicKeyBytes: ByteArray, data: ByteArray, signature: ByteArray): Boolean {
+
+    val kf = KeyFactory.getInstance("EC")
+
+    val keySpecPublic = X509EncodedKeySpec(publicKeyBytes)
+    val publicKey= kf.generatePublic(keySpecPublic)
+
     val verifySignature = Signature.getInstance("SHA256withECDSA")
     verifySignature.initVerify(publicKey)
     verifySignature.update(data)

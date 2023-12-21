@@ -48,6 +48,7 @@ import com.brandonhxrr.vault.data.EmployeesViewModel
 import com.brandonhxrr.vault.data.User
 import com.brandonhxrr.vault.data.encryptFileAesGcm
 import com.brandonhxrr.vault.data.loadPrivateKeyFromFile
+import com.brandonhxrr.vault.data.loadPublicKeyFromFile
 import com.brandonhxrr.vault.data.performECDHKeyExchange
 import com.brandonhxrr.vault.data.signECDSA
 import com.google.firebase.auth.FirebaseAuth
@@ -185,6 +186,8 @@ fun Share(modifier: Modifier) {
                     val decodedPrivateKey = Base64.getDecoder().decode(privateKey)
                     val otherPartyPublicKey = Base64.getDecoder().decode(selectedUser?.publicKey)
 
+                    val publicKey = loadPublicKeyFromFile(context)
+
                     val sharedKey = performECDHKeyExchange(decodedPrivateKey, otherPartyPublicKey)
 
                     if (currentUser != null) {
@@ -244,7 +247,8 @@ fun Share(modifier: Modifier) {
                                     "date" to currentDate.toString(),
                                     "signature" to signature,
                                     "author" to currentUser.uid,
-                                    "fileAuthor" to currentUser.displayName
+                                    "fileAuthor" to currentUser.displayName,
+                                    "authorPublicKey" to publicKey,
                                 )
 
                                 fileReference.setValue(fileData)

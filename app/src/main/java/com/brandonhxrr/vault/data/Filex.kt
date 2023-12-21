@@ -4,31 +4,34 @@ public class SharedFile {
     var id = ""
     var name = ""
     var date = ""
-    var author_public_key = ""
+    var authorPublicKey = ""
     var fileURL = ""
     var type = ""
     var signature = ""
     var author = ""
+    var authorId = ""
 
     constructor()
     constructor(
         id: String,
         name: String,
         date: String,
-        author_public_key: String,
+        authorPublicKey: String,
         fileURL: String,
         type: String,
         signature: String,
-        author: String
+        author: String,
+        authorId: String
     ) {
         this.id = id
         this.name = name
         this.date = date
-        this.author_public_key = author_public_key
+        this.authorPublicKey = authorPublicKey
         this.fileURL = fileURL
         this.type = type
         this.signature = signature
         this.author = author
+        this.authorId = authorId
     }
 
 
