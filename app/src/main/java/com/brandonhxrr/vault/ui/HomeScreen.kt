@@ -45,6 +45,10 @@ import com.brandonhxrr.vault.R
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 @OptIn(
     ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class,
@@ -57,13 +61,6 @@ fun Home(navController: NavController
     val auth = FirebaseAuth.getInstance()
     var generatedKeys by remember { mutableStateOf(false) }
     val context = LocalContext.current
-
-    val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences("vault_preferences", Context.MODE_PRIVATE)
-
-    LaunchedEffect(Unit) {
-        generatedKeys = sharedPreferences.getBoolean("generated_keys", false)
-    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -95,7 +92,9 @@ fun Home(navController: NavController
                 },
                 actions = {
                     IconButton(onClick = {
-                        navController.navigate(Screens.UserScreen.name)
+                        if(generatedKeys) {
+                            navController.navigate(Screens.UserScreen.name)
+                        }
                     }) {
                         if (auth.currentUser?.photoUrl != null) {
                             GlideImage(
@@ -128,6 +127,22 @@ fun Home(navController: NavController
             )  {
                 when (selectedItem) {
                     0 -> {
+                        val firebaseDatabase: FirebaseDatabase = FirebaseDatabase.getInstance()
+                        val userReference = firebaseDatabase.getReference("users_public_data").child(auth.currentUser?.uid.toString())
+
+                        userReference.child("public_key").addValueEventListener(object : ValueEventListener {
+                            override fun onDataChange(snapshot: DataSnapshot) {
+                                val publicKey = snapshot.value
+                                Log.d("HomeScreen", "Public key: $publicKey")
+                                if (publicKey != null) {
+                                    generatedKeys = true
+                                }
+                            }
+
+                            override fun onCancelled(error: DatabaseError) {
+                                Log.e("HomeScreen", "Error getting user data")
+                            }
+                        })
                         if (generatedKeys) {
                             SharedWithMe(modifier = Modifier.weight(0.9f))
                         } else {
