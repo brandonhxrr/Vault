@@ -18,10 +18,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +37,6 @@ import com.google.firebase.database.FirebaseDatabase
 fun NoKeys(modifier: Modifier) {
 
     val context = LocalContext.current
-    var messageText by rememberSaveable { mutableStateOf("") }
     val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("vault_preferences", Context.MODE_PRIVATE)
 
@@ -65,7 +60,7 @@ fun NoKeys(modifier: Modifier) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Aún no has generado tus llaves", // Reemplaza con tu propio texto
+            text = "Aún no has generado tus llaves",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight(400)
@@ -76,7 +71,6 @@ fun NoKeys(modifier: Modifier) {
         Button(
             onClick = {
                 try {
-                    // Generar y obtener la clave pública
                     generateKeys(context)
 
                     val publicKey = loadPublicKeyFromFile(context)
@@ -85,19 +79,33 @@ fun NoKeys(modifier: Modifier) {
 
                     auth.currentUser?.let { currentUser ->
                         val userId = currentUser.uid
-                        val userReference = FirebaseDatabase.getInstance().getReference("users_public_data").child(userId)
+                        val userReference =
+                            FirebaseDatabase.getInstance().getReference("users_public_data")
+                                .child(userId)
                         userReference.child("public_key").setValue(publicKey)
                             .addOnSuccessListener {
-                                messageText = "Se generaron y guardaron las llaves exitosamente"
+                                Toast.makeText(
+                                    context,
+                                    "Llaves generadas correctamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 sharedPreferences.edit().putBoolean("generated_keys", true).apply()
                             }
                             .addOnFailureListener { exception ->
-                                messageText = "Ocurrió un error al subir la clave pública a Firebase: ${exception.message}"
+                                Toast.makeText(
+                                    context,
+                                    "Ocurrió un error al subir la clave pública a Firebase",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 Log.e("NoKeysScreen", exception.toString())
                             }
                     }
                 } catch (e: Exception) {
-                    messageText = "Ocurrió un error al generar las llaves"
+                    Toast.makeText(
+                        context,
+                        "Ocurrió un error al generar las llaves",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     Log.e("NoKeysScreen", e.toString())
                 }
             },
@@ -108,9 +116,6 @@ fun NoKeys(modifier: Modifier) {
         ) {
             Text(text = "Generar llaves")
         }
-
-
-        Toast.makeText(context, messageText, Toast.LENGTH_SHORT).show()
     }
 }
 
