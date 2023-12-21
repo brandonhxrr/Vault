@@ -48,6 +48,7 @@ import com.brandonhxrr.vault.data.EmployeesViewModel
 import com.brandonhxrr.vault.data.User
 import com.brandonhxrr.vault.data.encryptFileAesGcm
 import com.brandonhxrr.vault.data.loadPrivateKeyFromFile
+import com.brandonhxrr.vault.data.performECDHKeyExchange
 import com.brandonhxrr.vault.data.signECDSA
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -180,118 +181,95 @@ fun Share(modifier: Modifier) {
                     val userId = selectedUser?.id
                     val currentUser = FirebaseAuth.getInstance().currentUser
 
-                    val privateKeyFile = loadPrivateKeyFromFile(context)
+                    val privateKey = loadPrivateKeyFromFile(context)
+                    val decodedPrivateKey = Base64.getDecoder().decode(privateKey)
+                    val otherPartyPublicKey = Base64.getDecoder().decode(selectedUser?.publicKey)
+
+                    val sharedKey = performECDHKeyExchange(decodedPrivateKey, otherPartyPublicKey)
 
                     if (currentUser != null) {
-                        val databaseReference: DatabaseReference =
-                            FirebaseDatabase.getInstance()
-                                .getReference("users_private_data/${currentUser.uid}/shared/$userId/shared_key")
 
-                        databaseReference.addListenerForSingleValueEvent(object :
-                            ValueEventListener {
-                            override fun onDataChange(snapshot: DataSnapshot) {
-                                val sharedKey = snapshot.getValue(String::class.java)
+                        val contentResolver = context.contentResolver
+                        val inputStream =
+                            contentResolver.openInputStream(selectedFileUri.toUri())
 
-                                if (sharedKey != null) {
-                                    val decodedSharedKey = Base64.getDecoder().decode(sharedKey)
-                                    val aesKey = SecretKeySpec(decodedSharedKey, "AES")
+                        val tempFile =
+                            File.createTempFile("temp", selectedFile!!.extension)
+                        tempFile.outputStream().use { output ->
+                            inputStream?.copyTo(output)
+                        }
 
-                                    val contentResolver = context.contentResolver
-                                    val inputStream =
-                                        contentResolver.openInputStream(selectedFileUri.toUri())
+                        val encryptedFile =
+                            encryptFileAesGcm(context, sharedKey, tempFile)
 
-                                    val tempFile =
-                                        File.createTempFile("temp", selectedFile!!.extension)
-                                    tempFile.outputStream().use { output ->
-                                        inputStream?.copyTo(output)
-                                    }
+                        val signature = signECDSA(decodedPrivateKey, inputStream!!.readBytes())
 
-                                    val encryptedFile =
-                                        encryptFileAesGcm(context, aesKey, tempFile)
+                        val storage = FirebaseStorage.getInstance()
 
-                                    val signature = signECDSA(privateKeyFile, inputStream!!.readBytes())
+                        val storageRef: StorageReference = storage.reference
 
-                                    val storage = FirebaseStorage.getInstance()
+                        val fileId = UUID.randomUUID().toString()
 
-                                    val storageRef: StorageReference = storage.reference
+                        val fileRef: StorageReference =
+                            storageRef.child("files/$fileId")
 
-                                    val fileId = UUID.randomUUID().toString()
+                        val uploadTask = fileRef.putFile(Uri.fromFile(encryptedFile))
 
-                                    val fileRef: StorageReference =
-                                        storageRef.child("files/$fileId")
+                        val dateFormat =
+                            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        val currentDate = dateFormat.format(Date())
 
-                                    val uploadTask = fileRef.putFile(Uri.fromFile(encryptedFile))
-
-                                    val dateFormat =
-                                        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                    val currentDate = dateFormat.format(Date())
-
-                                    uploadTask.continueWithTask { task ->
-                                        if (!task.isSuccessful) {
-                                            task.exception?.let {
-                                                throw it
-                                            }
-                                        }
-                                        fileRef.downloadUrl
-                                    }.addOnCompleteListener { downloadUrlTask ->
-                                        if (downloadUrlTask.isSuccessful) {
-                                            val downloadUri = downloadUrlTask.result
-
-                                            Log.d("ShareScreen", "downloadUri: $downloadUri")
-
-                                            val fileReference = FirebaseDatabase.getInstance()
-                                                .getReference("users_private_data")
-                                                .child(currentUser.uid).child("shared")
-                                                .child(userId!!).child("files").child(fileId)
-
-                                            val fileData = hashMapOf(
-                                                "path" to downloadUri.toString(),
-                                                "name" to selectedFile?.name,
-                                                "type" to selectedFile?.extension,
-                                                "date" to currentDate.toString(),
-                                                "signature" to signature
-                                            )
-
-                                            fileReference.setValue(fileData)
-                                                .addOnSuccessListener {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Archivo compartido exitosamente con ${selectedUser?.email}",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }.addOnFailureListener {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Error al agregar la ruta del archivo en la base de datos",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                        } else {
-                                            Toast.makeText(
-                                                context,
-                                                "Error al subir el archivo",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-
-                                    }
-                                } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Primero debes generar la llave compartida",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                        uploadTask.continueWithTask { task ->
+                            if (!task.isSuccessful) {
+                                task.exception?.let {
+                                    throw it
                                 }
                             }
+                            fileRef.downloadUrl
+                        }.addOnCompleteListener { downloadUrlTask ->
+                            if (downloadUrlTask.isSuccessful) {
+                                val downloadUri = downloadUrlTask.result
 
-                            override fun onCancelled(error: DatabaseError) {
+                                Log.d("ShareScreen", "downloadUri: $downloadUri")
+
+                                val fileReference = FirebaseDatabase.getInstance()
+                                    .getReference("users_private_data")
+                                    .child(currentUser.uid).child("shared")
+                                    .child(userId!!).child("files").child(fileId)
+
+                                val fileData = hashMapOf(
+                                    "path" to downloadUri.toString(),
+                                    "name" to selectedFile?.name,
+                                    "type" to selectedFile?.extension,
+                                    "date" to currentDate.toString(),
+                                    "signature" to signature,
+                                    "author" to currentUser.uid,
+                                    "fileAuthor" to currentUser.displayName
+                                )
+
+                                fileReference.setValue(fileData)
+                                    .addOnSuccessListener {
+                                        Toast.makeText(
+                                            context,
+                                            "Archivo compartido exitosamente con ${selectedUser?.email}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }.addOnFailureListener {
+                                        Toast.makeText(
+                                            context,
+                                            "Error al agregar la ruta del archivo en la base de datos",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                            } else {
                                 Toast.makeText(
                                     context,
-                                    "Error al obtener la llave compartida",
+                                    "Error al subir el archivo",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
-                        })
+
+                        }
                     }
                 } else {
                     Toast.makeText(

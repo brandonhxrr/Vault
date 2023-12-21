@@ -1,6 +1,10 @@
 package com.brandonhxrr.vault.ui
 
+import android.os.Environment
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,21 +28,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.brandonhxrr.vault.R
 import com.brandonhxrr.vault.data.SharedFile
+import com.brandonhxrr.vault.data.decryptFileAesGcm
+import com.brandonhxrr.vault.data.loadPrivateKeyFromFile
+import com.brandonhxrr.vault.data.performECDHKeyExchange
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import java.io.BufferedInputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.net.URL
+import java.util.Base64
 
 private fun getSharedFilesFromDatabase(onSuccess: (List<SharedFile>) -> Unit) {
     val database = FirebaseDatabase.getInstance()
-    val currentUser = FirebaseAuth.getInstance().currentUser // Replace with actual user ID
+    val currentUser = FirebaseAuth.getInstance().currentUser
 
     val filesReference = database.reference
         .child("users_private_data")
@@ -55,12 +71,27 @@ private fun getSharedFilesFromDatabase(onSuccess: (List<SharedFile>) -> Unit) {
                     val id = fileSnapshot.key ?: ""
                     val name = fileSnapshot.child("name").getValue(String::class.java) ?: ""
                     val date = fileSnapshot.child("date").getValue(String::class.java) ?: ""
-                    val author = fileSnapshot.child("author").getValue(String::class.java) ?: ""
+                    val author_public_key =
+                        fileSnapshot.child("author").getValue(String::class.java) ?: ""
                     val fileURL =
-                        fileSnapshot.child("fileURL").getValue(String::class.java) ?: ""
+                        fileSnapshot.child("path").getValue(String::class.java) ?: ""
                     val type = fileSnapshot.child("type").getValue(String::class.java) ?: ""
+                    val signature =
+                        fileSnapshot.child("signature").getValue(String::class.java) ?: ""
+                    var fileAuthor = fileSnapshot.child("fileAuthor").getValue(String::class.java)
+                        ?: ""
 
-                    val sharedFile = SharedFile(id, name, date, author, fileURL, type)
+                    val sharedFile = SharedFile(
+                        id,
+                        name,
+                        date,
+                        author_public_key,
+                        fileURL,
+                        type,
+                        signature,
+                        fileAuthor
+                    )
+
                     sharedFiles.add(sharedFile)
                 }
             }
@@ -108,6 +139,8 @@ fun SharedWithMe(modifier: Modifier) {
 
 @Composable
 fun SharedFile(sharedFile: SharedFile) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,7 +197,84 @@ fun SharedFile(sharedFile: SharedFile) {
                 modifier = Modifier
                     .weight(0.2f)
                     .size(32.dp)
+                    .clickable {
+
+                        val decodedPublicKey = Base64
+                            .getDecoder()
+                            .decode(sharedFile.author_public_key)
+                        val privateKey = loadPrivateKeyFromFile(context)
+                        val decodedPrivateKey = Base64
+                            .getDecoder()
+                            .decode(privateKey)
+                        val sharedKey = performECDHKeyExchange(decodedPrivateKey, decodedPublicKey)
+
+                        try {
+                            Log.d("SharedWithMe", sharedFile.fileURL)
+                            val url = URL(sharedFile.fileURL)
+
+                            Thread {
+                                try {
+                                    val connection = url.openConnection()
+                                    connection.connect()
+
+
+                                    val input = BufferedInputStream(url.openStream())
+
+                                    try {
+                                        val decryptedData = decryptFileAesGcm(
+                                            sharedKey,
+                                            input.readBytes()
+                                        )
+
+                                        val destinationFile = File(
+                                            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                                            sharedFile.name
+                                        )
+
+                                        val outputStream = FileOutputStream(destinationFile)
+                                        outputStream.write(decryptedData)
+                                        outputStream.close()
+
+                                        // Actualizar la interfaz de usuario desde el hilo principal
+                                        GlobalScope.launch(Dispatchers.Main) {
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "Archivo descargado y guardado con éxito en: ${destinationFile.absolutePath}",
+                                                    Toast.LENGTH_LONG
+                                                )
+                                                .show()
+                                        }
+                                    } catch (e: Exception) {
+                                        // Manejar errores y mostrar el Toast en el hilo principal
+                                        GlobalScope.launch(Dispatchers.Main) {
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    "Error al descargar o guardar el archivo",
+                                                    Toast.LENGTH_LONG
+                                                )
+                                                .show()
+                                            Log.e("SharedWithMe", e.stackTraceToString())
+                                        }
+                                    } finally {
+                                        input.close()
+                                    }
+                                } catch (e: Exception) {
+                                    // Manejar errores y mostrar el Toast en el hilo principal
+                                    GlobalScope.launch(Dispatchers.Main) {
+                                        Log.e("SharedWithMe1", e.stackTraceToString())
+                                    }
+                                }
+                            }.start()
+                        } catch (e: Exception) {
+                            Log.e("SharedWithMe2", e.stackTraceToString())
+                        }
+
+
+                    }
             )
+
         }
     }
 }

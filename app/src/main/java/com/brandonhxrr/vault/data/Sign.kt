@@ -2,14 +2,20 @@ package com.brandonhxrr.vault.data
 
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
-fun signECDSA(privateKey: PrivateKey, data: ByteArray): String {
+fun signECDSA(privateKeyBytes: ByteArray, data: ByteArray): String {
+    val kf = KeyFactory.getInstance("EC")
+    val privateKey = kf.generatePrivate(PKCS8EncodedKeySpec(privateKeyBytes))
+
     val signature = Signature.getInstance("SHA256withECDSA")
     signature.initSign(privateKey)
     signature.update(data)

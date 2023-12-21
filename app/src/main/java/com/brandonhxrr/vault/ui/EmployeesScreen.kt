@@ -155,7 +155,8 @@ fun Employee(user: User) {
                             onClick = {
                                 val privateKey = loadPrivateKeyFromFile(context)
                                 val decodedPublicKey = Base64.getDecoder().decode(publicKey)
-                                val sharedKey = performECDHKeyExchange(privateKey, decodedPublicKey)
+                                val decodedPrivateKey = Base64.getDecoder().decode(privateKey)
+                                val sharedKey = performECDHKeyExchange(decodedPrivateKey, decodedPublicKey)
 
                                 val currentUser = Firebase.auth.currentUser
                                 uploadSharedKeyToFirebase(currentUser?.uid!!, sharedKey, user.id)
