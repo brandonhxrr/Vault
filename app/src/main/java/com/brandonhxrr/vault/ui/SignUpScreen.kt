@@ -23,16 +23,20 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mail
+import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -88,6 +92,7 @@ fun SignUp(navController: NavController? = null) {
     var passwordSecurity by rememberSaveable { mutableStateOf(PasswordSecurity.NONE) }
     var selectedImageUri by remember { mutableStateOf<String?>(null) }
     var userName by remember { mutableStateOf("") }
+    var showSignUpIndicator by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
     val auth = FirebaseAuth.getInstance()
@@ -188,13 +193,8 @@ fun SignUp(navController: NavController? = null) {
                 )
             },
             keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
+                imeAction = ImeAction.Next, keyboardType = KeyboardType.Text
             ),
-            keyboardActions = KeyboardActions(onDone = {
-                // Handle Done button press
-                focusManager.clearFocus()
-                keyboardController?.hide()
-            }),
             textStyle = MaterialTheme.typography.bodyMedium
         )
 
@@ -259,6 +259,10 @@ fun SignUp(navController: NavController? = null) {
                     Icon(imageVector = visibilityIcon, contentDescription = description)
                 })
             },
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            }),
             leadingIcon = {
                 Icon(
                     Icons.Rounded.Lock, contentDescription = null, tint = Color.Gray
@@ -333,6 +337,7 @@ fun SignUp(navController: NavController? = null) {
 
                                             userReference.setValue(userData)
                                                 .addOnSuccessListener {
+                                                    showSignUpIndicator = false
                                                     navController?.navigate(Screens.HomeScreen.name) {
                                                         popUpTo(Screens.SignUpScreen.name) {
                                                             inclusive = true
@@ -340,7 +345,7 @@ fun SignUp(navController: NavController? = null) {
                                                     }
                                                 }
                                                 .addOnFailureListener {
-                                                    // Manejar error al guardar datos en la base de datos
+                                                    showSignUpIndicator = false
                                                 }
                                         } else {
                                             // Manejar error al obtener la URL de la imagen
@@ -358,6 +363,7 @@ fun SignUp(navController: NavController? = null) {
 
                                     userReference.setValue(userData)
                                         .addOnSuccessListener {
+                                            showSignUpIndicator = false
                                             navController?.navigate(Screens.HomeScreen.name) {
                                                 popUpTo(Screens.SignUpScreen.name) {
                                                     inclusive = true
@@ -365,7 +371,7 @@ fun SignUp(navController: NavController? = null) {
                                             }
                                         }
                                         .addOnFailureListener {
-
+                                            showSignUpIndicator = false
                                         }
                                 }
                             } else {
@@ -373,8 +379,10 @@ fun SignUp(navController: NavController? = null) {
                                     throw task.exception!!
                                 } catch (e: FirebaseAuthUserCollisionException) {
                                     // Email ya registrado
+                                    showSignUpIndicator = false
                                     "Correo ya registrado"
                                 } catch (e: Exception) {
+                                    showSignUpIndicator = false
                                     // Otros errores de Firebase
                                     "Error en el registro"
                                 }
@@ -426,6 +434,39 @@ fun SignUp(navController: NavController? = null) {
                 fontFamily = FontFamily(Font(R.font.product_sans_regular))
             )
         }
+
+        if (showSignUpIndicator) {
+            AlertDialog(
+                onDismissRequest = {
+                },
+                title = {
+                    Text(text = "Registrando usuario")
+                },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Rounded.PersonAdd,
+                        contentDescription = null,
+                        tint = Color.Unspecified
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        Text("No salgas de la aplicación")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+
+                }
+            )
+        }
     }
 }
 
@@ -433,7 +474,6 @@ enum class PasswordSecurity {
     NONE, WEAK, MODERATE, STRONG
 }
 
-// Función para evaluar la seguridad de la contraseña
 private fun evaluatePasswordSecurity(password: String): PasswordSecurity {
     val minLength = 8
     val hasUppercase = password.any { it.isUpperCase() }
@@ -449,7 +489,6 @@ private fun evaluatePasswordSecurity(password: String): PasswordSecurity {
     }
 }
 
-// Componente para mostrar el indicador de seguridad de la contraseña
 @Composable
 private fun PasswordSecurityIndicator(passwordSecurity: PasswordSecurity) {
     val color = when (passwordSecurity) {
@@ -467,7 +506,6 @@ private fun PasswordSecurityIndicator(passwordSecurity: PasswordSecurity) {
     )
 }
 
-// Función para validar el formato de dirección de correo electrónico
 private fun isValidEmail(email: String): Boolean {
     return Patterns.EMAIL_ADDRESS.matcher(email).matches()
 }
@@ -492,6 +530,7 @@ private fun validateInputs(
         errorMessage = "Las contraseñas no coinciden"
         isValid = false
     } else if (evaluatePasswordSecurity(password) != PasswordSecurity.STRONG) {
+        isValid = false
         errorMessage =
             "La contraseña debe ser de al menos 8 caracteres, tener al menos una mayúscula, una minúscula, un número y un caracter especial"
     }

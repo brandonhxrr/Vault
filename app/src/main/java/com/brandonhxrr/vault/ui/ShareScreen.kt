@@ -22,10 +22,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.CloudUpload
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -75,8 +77,8 @@ fun Share(modifier: Modifier) {
     val users by usersViewModel.users.collectAsState(initial = emptyList())
     var selectedFile: File? by remember { mutableStateOf(null) }
     var selectedFileUri by remember { mutableStateOf("") }
-
     var isMenuExpanded by remember { mutableStateOf(false) }
+    var showUploadIndicator by remember { mutableStateOf(false) }
 
     val selectFileLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -178,7 +180,9 @@ fun Share(modifier: Modifier) {
 
         Button(
             onClick = {
+                showUploadIndicator = true
                 if (selectedUser != null && selectedFile != null) {
+
                     val userId = selectedUser?.id
                     val currentUser = FirebaseAuth.getInstance().currentUser
 
@@ -258,12 +262,14 @@ fun Share(modifier: Modifier) {
                                             "Archivo compartido exitosamente con ${selectedUser?.email}",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                        showUploadIndicator = false
                                     }.addOnFailureListener {
                                         Toast.makeText(
                                             context,
                                             "Error al agregar la ruta del archivo en la base de datos",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                        showUploadIndicator = false
                                     }
                             } else {
                                 Toast.makeText(
@@ -271,6 +277,7 @@ fun Share(modifier: Modifier) {
                                     "Error al subir el archivo",
                                     Toast.LENGTH_SHORT
                                 ).show()
+                                showUploadIndicator = false
                             }
 
                         }
@@ -290,6 +297,39 @@ fun Share(modifier: Modifier) {
             Icon(imageVector = Icons.Default.Send, contentDescription = "Send")
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Compartir")
+        }
+        
+        if (showUploadIndicator) {
+            AlertDialog(
+                onDismissRequest = {
+                },
+                title = {
+                    Text(text = "Compartiendo archivo")
+                },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = null,
+                        tint = Color.Unspecified
+                    )
+                },
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                    ) {
+                        Text("Se está cifrando, firmando y subiendo el archivo")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+
+                }
+            )
         }
     }
 }

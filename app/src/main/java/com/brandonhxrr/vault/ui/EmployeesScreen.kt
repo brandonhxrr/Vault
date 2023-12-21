@@ -32,9 +32,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.brandonhxrr.vault.R
 import com.brandonhxrr.vault.data.EmployeesViewModel
 import com.brandonhxrr.vault.data.User
 import com.brandonhxrr.vault.data.loadPrivateKeyFromFile
@@ -112,14 +115,15 @@ fun Employee(user: User) {
                 Text(
                     text = user.name,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
                 )
 
-                // Correo electrónico del usuario
                 Text(
                     text = user.email,
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color.Gray
+                    color = Color.Gray,
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
                 )
             }
 
