@@ -60,7 +60,7 @@ fun Employees(modifier: Modifier) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Employees",
+            text = "Empleados",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -111,31 +111,15 @@ fun Employee(user: User) {
             ) {
                 Text(
                     text = user.name,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold
                 )
 
                 // Correo electrónico del usuario
                 Text(
                     text = user.email,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = Color.Gray
-                )
-            }
-
-            IconButton(
-                onClick = {
-                    showDialog = true
-                    publicKey = user.publicKey
-                },
-                modifier = Modifier
-                    .weight(0.2f)
-                    .size(32.dp)
-            ) {
-                Icon(
-                    Icons.Rounded.Lock,
-                    contentDescription = "Lock Icon",
-                    tint = Color.Gray
                 )
             }
 

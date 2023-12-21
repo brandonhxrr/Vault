@@ -138,7 +138,7 @@ fun Home(navController: NavController
                     2 -> Share(modifier = Modifier.weight(0.9f))
                 }
 
-                NavigationBar(modifier = Modifier.weight(0.1f)) {
+                NavigationBar(modifier = Modifier.weight(0.11f)) {
                     items.forEachIndexed { index, item ->
                         NavigationBarItem(
                             selected = selectedItem == index,

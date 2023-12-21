@@ -8,8 +8,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircleOutline
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -36,9 +39,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.brandonhxrr.vault.R
 import com.brandonhxrr.vault.data.SharedFile
 import com.brandonhxrr.vault.data.decryptFileAesGcm
@@ -134,7 +140,7 @@ fun SharedWithMe(modifier: Modifier) {
             .padding(16.dp)
     ) {
         Text(
-            text = "Shared with me",
+            text = "Compartidos conmigo",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -162,7 +168,7 @@ fun SharedFile(sharedFile: SharedFile) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(vertical = 16.dp, horizontal = 8.dp),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Row(
@@ -177,7 +183,7 @@ fun SharedFile(sharedFile: SharedFile) {
                 contentDescription = null,
                 modifier = Modifier
                     .weight(0.2f)
-                    .size(48.dp)
+                    .size(40.dp)
             )
 
             Column(
@@ -187,20 +193,23 @@ fun SharedFile(sharedFile: SharedFile) {
             ) {
                 Text(
                     text = sharedFile.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
                 )
 
                 Text(
                     text = sharedFile.author,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = Color.Gray,
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
                 )
 
                 Text(
                     text = sharedFile.date,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = Color.Gray,
+                    fontFamily = FontFamily(Font(R.font.product_sans_regular))
                 )
 
             }
@@ -210,7 +219,7 @@ fun SharedFile(sharedFile: SharedFile) {
                 contentDescription = null,
                 modifier = Modifier
                     .weight(0.2f)
-                    .size(32.dp)
+                    .size(28.dp)
                     .clickable {
                         try {
                             val privateKey = loadPrivateKeyFromFile(context)
@@ -226,7 +235,7 @@ fun SharedFile(sharedFile: SharedFile) {
                                         sharedFile.name
                                     )
 
-                                    if(inputFile.exists()) {
+                                    if (inputFile.exists()) {
                                         try {
                                             val signature =
                                                 signECDSA(decodedPrivateKey, inputFile.readBytes())
@@ -248,7 +257,8 @@ fun SharedFile(sharedFile: SharedFile) {
                                                     alertIcon.value = "success"
                                                     alertVisible.value = true
                                                 } else {
-                                                    alertMessage.value = "El archivo no es auténtico"
+                                                    alertMessage.value =
+                                                        "El archivo no es auténtico"
                                                     alertIcon.value = "error"
                                                     alertVisible.value = true
                                                 }
@@ -265,7 +275,7 @@ fun SharedFile(sharedFile: SharedFile) {
                                                 Log.e("SharedWithMe", e.stackTraceToString())
                                             }
                                         }
-                                    }else{
+                                    } else {
                                         GlobalScope.launch(Dispatchers.Main) {
                                             Toast
                                                 .makeText(
@@ -291,11 +301,11 @@ fun SharedFile(sharedFile: SharedFile) {
             )
 
             Icon(
-                painter = painterResource(id = R.drawable.download),
+                imageVector = Icons.Rounded.Download,
                 contentDescription = null,
                 modifier = Modifier
                     .weight(0.2f)
-                    .size(32.dp)
+                    .size(28.dp)
                     .clickable {
                         try {
 
