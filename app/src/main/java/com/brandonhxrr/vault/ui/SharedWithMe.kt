@@ -288,6 +288,11 @@ fun SharedFile(sharedFile: SharedFile) {
                                                 decodedSignature
                                             )
 
+                                            Log.d("SharedWithMe", "File ${sharedFile.name} Verification: $verification")
+                                            Log.d("SharedWithMe", "File ${sharedFile.name} Public Key: ${sharedFile.authorPublicKey}")
+                                            Log.d("SharedWithMe", "File ${sharedFile.name} Private Key: $privateKey")
+                                            Log.d("SharedWithMe", "File ${sharedFile.name} Signature: $signature")
+
                                             GlobalScope.launch(Dispatchers.Main) {
                                                 if (verification) {
                                                     alertMessage.value = "El archivo es auténtico"

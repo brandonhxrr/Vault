@@ -241,8 +241,8 @@ fun Share(modifier: Modifier) {
 
                                 val fileReference = FirebaseDatabase.getInstance()
                                     .getReference("users_private_data")
-                                    .child(currentUser.uid).child("shared")
-                                    .child(userId!!).child("files").child(fileId)
+                                    .child(userId!!).child("shared")
+                                    .child(currentUser.uid).child("files").child(fileId)
 
                                 val fileData = hashMapOf(
                                     "path" to downloadUri.toString(),
